@@ -22,9 +22,8 @@ export const PRESET_SCOPES = [
   'Style Transfer (风格迁移)',
   'Object Replacement (物体替换)',
   'Character Reference (角色参考)',
-  'text render (文本控制)',
-  'Structure Control (结构控制)',
-  'Background Change (背景重绘)',
-  'Inpainting (局部修补)',
-  'Outpainting (外扩填充)'
+  'Worldview & Scenario (世界观与场景)',
+  'Text & Layout (文字与排版)',
+  'Comics/Manga (漫画/分镜生成)',
+  'Corner Cases (高难度综合题)',
 ];
