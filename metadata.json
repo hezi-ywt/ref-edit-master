@@ -1,0 +1,5 @@
+{
+  "name": "Ref-Edit Master",
+  "description": "A specialized dataset annotation tool for image editing generative models. Features dynamic reference management, multi-instruction tagging, and custom categorization.",
+  "requestFramePermissions": []
+}
