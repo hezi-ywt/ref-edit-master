@@ -4,12 +4,17 @@ export interface ReferenceImage {
   file: File;
 }
 
+export interface TargetImage extends ReferenceImage {
+  model: string; // Which model generated this result
+}
+
 export interface PromptEntry {
   id: string;
   text: string;      // The prompt content
   scope: string;     // Task Scope (e.g., Object Replacement)
   purpose: string;   // Purpose/Description
   references: ReferenceImage[]; // References specific to this prompt
+  targets: TargetImage[]; // Expected result images for this prompt
 }
 
 export interface DatasetEntry {
@@ -26,4 +31,11 @@ export const PRESET_SCOPES = [
   'Text & Layout (文字与排版)',
   'Comics/Manga (漫画/分镜生成)',
   'Corner Cases (高难度综合题)',
+];
+
+export const PRESET_MODEL_NAMES = [
+  'nanobanana',
+  'qwen-image-edit',
+  'seedream',
+  'others'
 ];

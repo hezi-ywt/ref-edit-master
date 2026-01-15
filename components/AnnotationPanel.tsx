@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { PlusIcon, TrashIcon, ChevronDownIcon, CopyIcon } from './Icons';
-import { PromptEntry, PRESET_SCOPES } from '../types';
+import { PromptEntry, PRESET_SCOPES, PRESET_MODEL_NAMES } from '../types';
 import { ReferencePool } from './ReferencePool';
 
 interface AnnotationPanelProps {
@@ -11,6 +11,9 @@ interface AnnotationPanelProps {
   onClonePrompt: (id: string) => void;
   onRefUpload: (promptId: string, files: FileList) => void;
   onRefRemove: (promptId: string, refId: string) => void;
+  onTargetUpload: (promptId: string, files: FileList) => void;
+  onTargetRemove: (promptId: string, refId: string) => void;
+  onTargetUpdateModel: (promptId: string, refId: string, model: string) => void;
   lang?: 'en' | 'zh';
 }
 
@@ -28,7 +31,11 @@ const TEXT = {
     purpose: "Purpose / Goal",
     purposePlaceholder: "e.g., Test subject identity retention...",
     addNew: "Add New Prompt Entry",
-    customScope: "Type above to create custom scope..."
+    customScope: "Type above to create custom scope...",
+    targetTitle: "Target Results",
+    targetEmpty: "Drag & drop or click Add",
+    targetAdd: "Add",
+    targetModelPlaceholder: "Model name"
   },
   zh: {
     listTitle: "指令与任务",
@@ -43,7 +50,11 @@ const TEXT = {
     purpose: "目的 / 目标",
     purposePlaceholder: "例如：测试主体人物的一致性保持...",
     addNew: "添加新指令条目",
-    customScope: "在上方输入以创建自定义范围..."
+    customScope: "在上方输入以创建自定义范围...",
+    targetTitle: "目标结果",
+    targetEmpty: "拖拽或点击添加",
+    targetAdd: "添加",
+    targetModelPlaceholder: "模型名称"
   }
 };
 
@@ -118,6 +129,9 @@ export const AnnotationPanel: React.FC<AnnotationPanelProps> = ({
   onClonePrompt,
   onRefUpload,
   onRefRemove,
+  onTargetUpload,
+  onTargetRemove,
+  onTargetUpdateModel,
   lang = 'zh'
 }) => {
   const t = TEXT[lang];
@@ -220,6 +234,26 @@ export const AnnotationPanel: React.FC<AnnotationPanelProps> = ({
                       onChange={(e) => onUpdatePrompt(item.id, 'purpose', e.target.value)}
                       placeholder={t.purposePlaceholder}
                       className="w-full flex-1 bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-700 rounded-lg p-3 text-sm text-stone-800 dark:text-slate-200 placeholder-stone-400 dark:placeholder-slate-700 focus:outline-none focus:border-orange-500 dark:focus:border-indigo-500 focus:ring-1 focus:ring-orange-500/50 dark:focus:ring-indigo-500/50 resize-none min-h-[100px]"
+                    />
+                  </div>
+
+                  {/* Target Results */}
+                  <div className="flex flex-col gap-2">
+                    <ReferencePool
+                      references={item.targets}
+                      onUpload={(files) => onTargetUpload(item.id, files)}
+                      onRemove={(refId) => onTargetRemove(item.id, refId)}
+                      compact
+                      lang={lang}
+                      labels={{
+                        title: t.targetTitle,
+                        empty: t.targetEmpty,
+                        add: t.targetAdd,
+                        modelPlaceholder: t.targetModelPlaceholder
+                      }}
+                      showModel
+                      onUpdateModel={(refId, model) => onTargetUpdateModel(item.id, refId, model)}
+                      modelOptions={PRESET_MODEL_NAMES}
                     />
                   </div>
                 </div>

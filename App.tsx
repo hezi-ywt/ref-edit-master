@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import JSZip from 'jszip';
 import { AnnotationPanel } from './components/AnnotationPanel';
 import { DownloadIcon, XIcon, ImportIcon, SunIcon, MoonIcon, LanguagesIcon } from './components/Icons';
-import { DatasetEntry, PromptEntry, PRESET_SCOPES, ReferenceImage } from './types';
+import { DatasetEntry, PromptEntry, PRESET_SCOPES, ReferenceImage, TargetImage } from './types';
 
 const APP_TEXT = {
   en: {
@@ -11,7 +11,9 @@ const APP_TEXT = {
     importing: "Importing...",
     export: "Export ZIP",
     zipping: "Zipping...",
-    titleSuffix: "Master"
+    titleSuffix: "Master",
+    targetModelRequired: "Please fill model name for all target results before exporting.",
+    targetModelMissingOnImport: "Target results imported. Please fill model names for comparison."
   },
   zh: {
     preview: "结构预览",
@@ -19,7 +21,9 @@ const APP_TEXT = {
     importing: "导入中...",
     export: "导出数据包",
     zipping: "打包中...",
-    titleSuffix: "Master"
+    titleSuffix: "Master",
+    targetModelRequired: "请为所有目标结果填写模型名称后再导出。",
+    targetModelMissingOnImport: "已导入目标结果，请补充模型名称用于对比。"
   }
 };
 
@@ -30,7 +34,8 @@ function App() {
     text: '',
     scope: PRESET_SCOPES[0],
     purpose: '',
-    references: []
+    references: [],
+    targets: []
   }]);
 
   const [showJsonPreview, setShowJsonPreview] = useState(false);
@@ -52,7 +57,8 @@ function App() {
       text: '',
       scope: PRESET_SCOPES[0],
       purpose: '',
-      references: []
+      references: [],
+      targets: []
     }]);
   };
 
@@ -67,6 +73,10 @@ function App() {
         id: Math.random().toString(36).substring(2, 9),
         // Deep copy references with new IDs but same blob URL and File
         references: original.references.map(ref => ({
+          ...ref,
+          id: Math.random().toString(36).substring(2, 9)
+        })),
+        targets: original.targets.map(ref => ({
           ...ref,
           id: Math.random().toString(36).substring(2, 9)
         }))
@@ -84,6 +94,7 @@ function App() {
        // Cleanup URLs for this prompt
        if (prompt) {
          prompt.references.forEach(ref => URL.revokeObjectURL(ref.url));
+         prompt.targets.forEach(ref => URL.revokeObjectURL(ref.url));
        }
        return prev.filter(p => p.id !== id);
     });
@@ -119,6 +130,42 @@ function App() {
     }));
   };
 
+  const handleTargetUpload = (promptId: string, files: FileList) => {
+    setPrompts(prev => prev.map(p => {
+      if (p.id !== promptId) return p;
+      
+      const newTargets = Array.from(files).map((file) => ({
+        id: Math.random().toString(36).substring(2, 9),
+        file,
+        url: URL.createObjectURL(file),
+        model: ''
+      }));
+      
+      return { ...p, targets: [...p.targets, ...newTargets] };
+    }));
+  };
+
+  const handleTargetRemove = (promptId: string, refId: string) => {
+    setPrompts(prev => prev.map(p => {
+      if (p.id !== promptId) return p;
+      
+      const target = p.targets.find(r => r.id === refId);
+      if (target) URL.revokeObjectURL(target.url);
+      
+      return { ...p, targets: p.targets.filter(r => r.id !== refId) };
+    }));
+  };
+
+  const handleTargetUpdateModel = (promptId: string, refId: string, model: string) => {
+    setPrompts(prev => prev.map(p => {
+      if (p.id !== promptId) return p;
+      return {
+        ...p,
+        targets: p.targets.map(t => t.id === refId ? { ...t, model } : t)
+      };
+    }));
+  };
+
   // Simplified for preview only
   const generatePreviewData = () => ({
     prompts: prompts.map((p, idx) => ({
@@ -129,6 +176,10 @@ function App() {
       references: p.references.map((r, i) => {
         const ext = r.file.name.split('.').pop() || 'png';
         return `ref_${i + 1}.${ext}`;
+      }),
+      targets: p.targets.map((r, i) => {
+        const ext = r.file.name.split('.').pop() || 'png';
+        return `target_${i + 1}.${ext}`;
       })
     })),
     total_cases: prompts.length,
@@ -140,11 +191,18 @@ function App() {
     setIsExporting(true);
 
     try {
+      const hasMissingTargetModel = prompts.some(p => p.targets.some(t => t.model.trim() === ''));
+      if (hasMissingTargetModel) {
+        alert(t.targetModelRequired);
+        setIsExporting(false);
+        return;
+      }
+
       const zip = new JSZip();
       const rootFolder = zip.folder(`RefEdit_Dataset_${new Date().toISOString().split('T')[0]}`);
       
       // Filter out empty prompts
-      const validPrompts = prompts.filter(p => p.text.trim() !== '' || p.references.length > 0);
+      const validPrompts = prompts.filter(p => p.text.trim() !== '' || p.references.length > 0 || p.targets.length > 0);
 
       // Process each prompt as a separate case
       validPrompts.forEach((prompt, index) => {
@@ -169,13 +227,34 @@ function App() {
           });
         });
 
+        // Save and Rename Targets
+        const targetMapping: Array<{original: string, saved_as: string, model: string}> = [];
+
+        prompt.targets.forEach((ref, refIndex) => {
+          const extension = ref.file.name.split('.').pop() || 'png';
+          const newFileName = `target_${refIndex + 1}.${extension}`;
+          
+          caseFolder.file(newFileName, ref.file);
+          
+          targetMapping.push({
+            original: ref.file.name,
+            saved_as: newFileName,
+            model: ref.model
+          });
+        });
+
         // Create Case Metadata
         const caseMetadata = {
           id: prompt.id,
           prompt: prompt.text,
           scope: prompt.scope,
           purpose: prompt.purpose,
-          references: referenceMapping.map(r => r.saved_as)
+          references: referenceMapping.map(r => r.saved_as),
+          targets: targetMapping.map(r => r.saved_as),
+          target_models: targetMapping.map(r => ({
+            file: r.saved_as,
+            model: r.model
+          }))
         };
 
         caseFolder.file("metadata.json", JSON.stringify(caseMetadata, null, 2));
@@ -221,6 +300,7 @@ function App() {
     try {
       const zip = await JSZip.loadAsync(file);
       const newPrompts: PromptEntry[] = [];
+      const allZipPaths = Object.keys(zip.files);
       
       // Find all metadata.json files in the zip
       // Filter out MAC OS artifacts (._ files and __MACOSX folder)
@@ -237,6 +317,19 @@ function App() {
         throw new Error("No valid 'metadata.json' files found in the ZIP archive.");
       }
 
+      const guessTargetFiles = (folderPath: string) => {
+        const lowerFolder = folderPath.toLowerCase();
+        return allZipPaths
+          .filter(path => {
+            const lowerPath = path.toLowerCase();
+            if (!lowerPath.startsWith(lowerFolder)) return false;
+            const fileName = lowerPath.slice(lowerFolder.length);
+            if (fileName.includes('/')) return false;
+            return /^target_\d+\.(png|jpe?g|webp|gif|bmp|svg)$/.test(fileName);
+          })
+          .sort();
+      };
+
       for (const metadataPath of metadataFiles) {
         const fileData = await zip.file(metadataPath)?.async('string');
         if (!fileData) continue;
@@ -250,6 +343,7 @@ function App() {
           const folderPath = metadataPath.substring(0, metadataPath.lastIndexOf('metadata.json'));
           
           const loadedReferences: ReferenceImage[] = [];
+          const loadedTargets: TargetImage[] = [];
 
           if (Array.isArray(metadata.references)) {
             for (const refFilename of metadata.references) {
@@ -275,12 +369,54 @@ function App() {
             }
           }
 
+          const targetEntries = Array.isArray(metadata.targets)
+            ? metadata.targets
+            : guessTargetFiles(folderPath);
+
+          const targetModels: Record<string, string> = {};
+          if (Array.isArray(metadata.target_models)) {
+            metadata.target_models.forEach((entry: any) => {
+              if (entry?.file) targetModels[entry.file] = entry?.model || '';
+            });
+          }
+
+          if (Array.isArray(targetEntries) && targetEntries.length > 0) {
+            for (const entry of targetEntries) {
+              const refFilename = typeof entry === 'string'
+                ? entry
+                : (entry?.file || entry?.saved_as || entry?.filename);
+              if (!refFilename) continue;
+              
+              const imagePath = folderPath + refFilename;
+              const imageFile = zip.file(imagePath);
+              
+              if (imageFile) {
+                const blob = await imageFile.async('blob');
+                const ext = refFilename.split('.').pop()?.toLowerCase() || 'png';
+                const mimeType = ext === 'svg' ? 'image/svg+xml' : `image/${ext}`;
+                const file = new File([blob], refFilename, { type: mimeType });
+                
+                loadedTargets.push({
+                  id: Math.random().toString(36).substring(2, 9),
+                  url: URL.createObjectURL(file),
+                  file: file,
+                  model: typeof entry === 'string'
+                    ? (targetModels[refFilename] || '')
+                    : (entry?.model || targetModels[refFilename] || '')
+                });
+              } else {
+                console.warn(`Target image not found in zip: ${imagePath}`);
+              }
+            }
+          }
+
           newPrompts.push({
             id: metadata.id || Math.random().toString(36).substring(2, 9),
             text: metadata.prompt || '',
             scope: metadata.scope || PRESET_SCOPES[0],
             purpose: metadata.purpose || '',
-            references: loadedReferences
+            references: loadedReferences,
+            targets: loadedTargets
           });
 
         } catch (err) {
@@ -290,8 +426,15 @@ function App() {
 
       if (newPrompts.length > 0) {
         // Cleanup existing object URLs
-        prompts.forEach(p => p.references.forEach(r => URL.revokeObjectURL(r.url)));
+        prompts.forEach(p => {
+          p.references.forEach(r => URL.revokeObjectURL(r.url));
+          p.targets.forEach(r => URL.revokeObjectURL(r.url));
+        });
         setPrompts(newPrompts);
+        const hasMissingTargetModel = newPrompts.some(p => p.targets.some(t => t.model.trim() === ''));
+        if (hasMissingTargetModel) {
+          alert(t.targetModelMissingOnImport);
+        }
       } else {
         throw new Error("No valid data could be parsed from the metadata files.");
       }
@@ -403,6 +546,9 @@ function App() {
             onClonePrompt={handleClonePrompt}
             onRefUpload={handleRefUpload}
             onRefRemove={handleRefRemove}
+            onTargetUpload={handleTargetUpload}
+            onTargetRemove={handleTargetRemove}
+            onTargetUpdateModel={handleTargetUpdateModel}
             lang={lang}
           />
         </main>

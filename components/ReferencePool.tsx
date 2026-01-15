@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useId } from 'react';
 import { ReferenceImage } from '../types';
 import { UploadIcon, TrashIcon, LayersIcon, XIcon } from './Icons';
 
@@ -8,6 +8,10 @@ interface ReferencePoolProps {
   onRemove: (id: string) => void;
   compact?: boolean;
   lang?: 'en' | 'zh';
+  labels?: Partial<typeof TEXT.en>;
+  showModel?: boolean;
+  onUpdateModel?: (id: string, model: string) => void;
+  modelOptions?: string[];
 }
 
 const TEXT = {
@@ -16,12 +20,14 @@ const TEXT = {
     unit: "images",
     add: "Add",
     empty: "Drag & drop or click Add",
+    modelPlaceholder: "Model name"
   },
   zh: {
     title: "参考素材",
     unit: "张图片",
     add: "添加",
     empty: "拖拽或点击添加",
+    modelPlaceholder: "模型名称"
   }
 };
 
@@ -30,13 +36,18 @@ export const ReferencePool: React.FC<ReferencePoolProps> = ({
   onUpload, 
   onRemove,
   compact = false,
-  lang = 'zh'
+  lang = 'zh',
+  labels,
+  showModel = false,
+  onUpdateModel,
+  modelOptions = []
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const modelListId = useId();
   
-  const t = TEXT[lang];
+  const t = { ...TEXT[lang], ...(labels || {}) };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -147,6 +158,28 @@ export const ReferencePool: React.FC<ReferencePoolProps> = ({
                     alt={ref.file.name} 
                     className="w-full h-full object-contain p-1"
                   />
+                  {showModel && (
+                    <div
+                      className="absolute bottom-0 left-0 right-0 bg-black/60 p-1"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <input
+                        type="text"
+                        value={(ref as any).model || ''}
+                        onChange={(e) => onUpdateModel?.(ref.id, e.target.value)}
+                        placeholder={t.modelPlaceholder}
+                        list={modelOptions.length > 0 ? modelListId : undefined}
+                        className="w-full bg-white/90 dark:bg-slate-900/90 text-[10px] text-stone-700 dark:text-slate-200 px-1.5 py-1 rounded border border-stone-200/70 dark:border-slate-700/70 focus:outline-none focus:border-orange-500 dark:focus:border-indigo-500"
+                      />
+                      {modelOptions.length > 0 && (
+                        <datalist id={modelListId}>
+                          {modelOptions.map((option) => (
+                            <option key={option} value={option} />
+                          ))}
+                        </datalist>
+                      )}
+                    </div>
+                  )}
                   
                   {/* Overlay Controls */}
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-1.5 pointer-events-none">
