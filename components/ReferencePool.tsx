@@ -80,24 +80,30 @@ export const ReferencePool: React.FC<ReferencePoolProps> = ({
 
   return (
     <>
-      {/* Fullscreen Image Preview Modal */}
+      {/* Image Preview Modal */}
       {previewUrl && (
         <div 
-          className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-200"
+          className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-200"
           onClick={() => setPreviewUrl(null)}
         >
-          <button 
-            className="absolute top-4 right-4 p-2 text-slate-400 hover:text-white bg-slate-800/50 hover:bg-slate-700 rounded-full transition-colors z-[101]"
-            onClick={() => setPreviewUrl(null)}
-          >
-            <XIcon className="w-6 h-6" />
-          </button>
-          <img 
-            src={previewUrl} 
-            alt="Full size preview" 
-            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl ring-1 ring-slate-800"
+          <div
+            className="relative w-full max-w-4xl max-h-[75vh] bg-slate-950/90 rounded-2xl ring-1 ring-white/10 shadow-2xl p-3 sm:p-4"
             onClick={(e) => e.stopPropagation()}
-          />
+          >
+            <button 
+              className="absolute -top-3 -right-3 p-2 text-slate-200 hover:text-white bg-slate-900/90 hover:bg-slate-800 rounded-full transition-colors shadow-lg"
+              onClick={() => setPreviewUrl(null)}
+            >
+              <XIcon className="w-5 h-5" />
+            </button>
+            <div className="w-full h-full max-h-[72vh] flex items-center justify-center">
+              <img 
+                src={previewUrl} 
+                alt="Full size preview" 
+                className="max-w-full max-h-[72vh] object-contain rounded-lg shadow-xl ring-1 ring-slate-800/70"
+              />
+            </div>
+          </div>
         </div>
       )}
 
@@ -150,17 +156,36 @@ export const ReferencePool: React.FC<ReferencePoolProps> = ({
               {references.map((ref) => (
                 <div 
                   key={ref.id} 
-                  className="group relative bg-white dark:bg-black/40 rounded-lg overflow-hidden border border-stone-200 dark:border-slate-700/50 hover:border-orange-400 dark:hover:border-indigo-500/50 transition-all aspect-square cursor-zoom-in shadow-sm dark:shadow-none"
-                  onClick={() => setPreviewUrl(ref.url)}
+                  className="group relative bg-white dark:bg-black/40 rounded-lg overflow-hidden border border-stone-200 dark:border-slate-700/50 hover:border-orange-400 dark:hover:border-indigo-500/50 transition-all shadow-sm dark:shadow-none"
                 >
-                  <img 
-                    src={ref.url} 
-                    alt={ref.file.name} 
-                    className="w-full h-full object-contain p-1"
-                  />
+                  <div
+                    className="relative aspect-square cursor-zoom-in"
+                    onClick={() => setPreviewUrl(ref.url)}
+                  >
+                    <img 
+                      src={ref.url} 
+                      alt={ref.file.name} 
+                      className="w-full h-full object-contain p-1"
+                    />
+                    {/* Overlay Controls */}
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-1.5 pointer-events-none">
+                      <div className="text-[10px] text-white/80 truncate px-1.5 py-0.5 drop-shadow-md bg-black/50 rounded">
+                        {ref.file.name}
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRemove(ref.id);
+                        }}
+                        className="self-end p-1 text-slate-300 hover:text-red-400 bg-slate-900/80 rounded backdrop-blur-sm pointer-events-auto"
+                      >
+                        <TrashIcon className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
                   {showModel && (
                     <div
-                      className="absolute bottom-0 left-0 right-0 bg-black/60 p-1"
+                      className="px-1.5 py-1.5 bg-stone-50/90 dark:bg-slate-900/80 border-t border-stone-200/70 dark:border-slate-700/70"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <input
@@ -169,7 +194,7 @@ export const ReferencePool: React.FC<ReferencePoolProps> = ({
                         onChange={(e) => onUpdateModel?.(ref.id, e.target.value)}
                         placeholder={t.modelPlaceholder}
                         list={modelOptions.length > 0 ? modelListId : undefined}
-                        className="w-full bg-white/90 dark:bg-slate-900/90 text-[10px] text-stone-700 dark:text-slate-200 px-1.5 py-1 rounded border border-stone-200/70 dark:border-slate-700/70 focus:outline-none focus:border-orange-500 dark:focus:border-indigo-500"
+                        className="w-full bg-white dark:bg-slate-950 text-[11px] text-stone-700 dark:text-slate-200 px-2 py-1.5 rounded-md border border-stone-200/80 dark:border-slate-700/80 focus:outline-none focus:border-orange-500 dark:focus:border-indigo-500"
                       />
                       {modelOptions.length > 0 && (
                         <datalist id={modelListId}>
@@ -180,22 +205,6 @@ export const ReferencePool: React.FC<ReferencePoolProps> = ({
                       )}
                     </div>
                   )}
-                  
-                  {/* Overlay Controls */}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-1.5 pointer-events-none">
-                    <div className="text-[9px] text-white/80 truncate px-1 drop-shadow-md bg-black/50 rounded">
-                      {ref.file.name}
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onRemove(ref.id);
-                      }}
-                      className="self-end p-1 text-slate-300 hover:text-red-400 bg-slate-900/80 rounded backdrop-blur-sm pointer-events-auto"
-                    >
-                      <TrashIcon className="w-3 h-3" />
-                    </button>
-                  </div>
                 </div>
               ))}
             </div>

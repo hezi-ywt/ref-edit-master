@@ -12,6 +12,9 @@ const APP_TEXT = {
     export: "Export ZIP",
     zipping: "Zipping...",
     titleSuffix: "Master",
+    previewTitle: "Dataset Structure Preview",
+    importDragHint: "Drop ZIP to import",
+    importInvalid: "Please select a .zip file.",
     targetModelRequired: "Please fill model name for all target results before exporting.",
     targetModelMissingOnImport: "Target results imported. Please fill model names for comparison."
   },
@@ -22,15 +25,35 @@ const APP_TEXT = {
     export: "导出数据包",
     zipping: "打包中...",
     titleSuffix: "Master",
+    previewTitle: "数据结构预览",
+    importDragHint: "拖拽 ZIP 到此处导入",
+    importInvalid: "请上传 .zip 文件。",
     targetModelRequired: "请为所有目标结果填写模型名称后再导出。",
     targetModelMissingOnImport: "已导入目标结果，请补充模型名称用于对比。"
   }
 };
 
+const createId = () => {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID();
+  }
+  return Math.random().toString(36).substring(2, 10);
+};
+
+const getImageMimeType = (fileName: string) => {
+  const ext = fileName.split('.').pop()?.toLowerCase() || 'png';
+  if (ext === 'svg') return 'image/svg+xml';
+  if (ext === 'jpg' || ext === 'jpeg') return 'image/jpeg';
+  if (ext === 'png' || ext === 'webp' || ext === 'gif' || ext === 'bmp') {
+    return `image/${ext}`;
+  }
+  return 'image/png';
+};
+
 function App() {
   // Initialize with one empty prompt
   const [prompts, setPrompts] = useState<PromptEntry[]>([{
-    id: 'init-1',
+    id: createId(),
     text: '',
     scope: PRESET_SCOPES[0],
     purpose: '',
@@ -41,19 +64,21 @@ function App() {
   const [showJsonPreview, setShowJsonPreview] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isImportDragOver, setIsImportDragOver] = useState(false);
   // Default to Light Mode (false = light, true = dark)
   const [darkMode, setDarkMode] = useState(false);
   // Language State
   const [lang, setLang] = useState<'zh' | 'en'>('zh');
 
   const importInputRef = useRef<HTMLInputElement>(null);
+  const importDragCounterRef = useRef(0);
   
   const t = APP_TEXT[lang];
 
   // Prompt Handlers
   const handleAddPrompt = () => {
     setPrompts(prev => [...prev, {
-      id: Math.random().toString(36).substring(2, 9),
+      id: createId(),
       text: '',
       scope: PRESET_SCOPES[0],
       purpose: '',
@@ -70,15 +95,15 @@ function App() {
       const original = prev[index];
       const newPrompt: PromptEntry = {
         ...original,
-        id: Math.random().toString(36).substring(2, 9),
+        id: createId(),
         // Deep copy references with new IDs but same blob URL and File
         references: original.references.map(ref => ({
           ...ref,
-          id: Math.random().toString(36).substring(2, 9)
+          id: createId()
         })),
         targets: original.targets.map(ref => ({
           ...ref,
-          id: Math.random().toString(36).substring(2, 9)
+          id: createId()
         }))
       };
 
@@ -110,7 +135,7 @@ function App() {
       if (p.id !== promptId) return p;
       
       const newRefs = Array.from(files).map((file) => ({
-        id: Math.random().toString(36).substring(2, 9),
+        id: createId(),
         file,
         url: URL.createObjectURL(file),
       }));
@@ -135,7 +160,7 @@ function App() {
       if (p.id !== promptId) return p;
       
       const newTargets = Array.from(files).map((file) => ({
-        id: Math.random().toString(36).substring(2, 9),
+        id: createId(),
         file,
         url: URL.createObjectURL(file),
         model: ''
@@ -292,10 +317,26 @@ function App() {
     }
   };
 
-  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const isZipFile = (file: File) => {
+    const name = file.name.toLowerCase();
+    return name.endsWith('.zip') || file.type === 'application/zip' || file.type === 'application/x-zip-compressed';
+  };
 
+  const hasZipInDataTransfer = (dataTransfer: DataTransfer) => {
+    const items = Array.from(dataTransfer.items || []) as DataTransferItem[];
+    const firstFile = items.find(item => item.kind === 'file')?.getAsFile() || null;
+    if (firstFile) {
+      return isZipFile(firstFile);
+    }
+    return items.some(item => item.kind === 'file' && item.type.includes('zip'));
+  };
+
+  const importZipFile = async (file: File) => {
+    if (isImporting) return;
+    if (!isZipFile(file)) {
+      alert(t.importInvalid);
+      return;
+    }
     setIsImporting(true);
     try {
       const zip = await JSZip.loadAsync(file);
@@ -323,11 +364,12 @@ function App() {
           .filter(path => {
             const lowerPath = path.toLowerCase();
             if (!lowerPath.startsWith(lowerFolder)) return false;
-            const fileName = lowerPath.slice(lowerFolder.length);
+            const fileName = path.slice(folderPath.length);
             if (fileName.includes('/')) return false;
-            return /^target_\d+\.(png|jpe?g|webp|gif|bmp|svg)$/.test(fileName);
+            return /^target_\d+\.(png|jpe?g|webp|gif|bmp|svg)$/i.test(fileName);
           })
-          .sort();
+          .map(path => path.slice(folderPath.length))
+          .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
       };
 
       for (const metadataPath of metadataFiles) {
@@ -354,12 +396,10 @@ function App() {
               if (imageFile) {
                 const blob = await imageFile.async('blob');
                 // Determine mime type from extension
-                const ext = refFilename.split('.').pop()?.toLowerCase() || 'png';
-                const mimeType = ext === 'svg' ? 'image/svg+xml' : `image/${ext}`;
-                const file = new File([blob], refFilename, { type: mimeType });
+                const file = new File([blob], refFilename, { type: getImageMimeType(refFilename) });
                 
                 loadedReferences.push({
-                  id: Math.random().toString(36).substring(2, 9),
+                  id: createId(),
                   url: URL.createObjectURL(file),
                   file: file
                 });
@@ -392,12 +432,10 @@ function App() {
               
               if (imageFile) {
                 const blob = await imageFile.async('blob');
-                const ext = refFilename.split('.').pop()?.toLowerCase() || 'png';
-                const mimeType = ext === 'svg' ? 'image/svg+xml' : `image/${ext}`;
-                const file = new File([blob], refFilename, { type: mimeType });
+                const file = new File([blob], refFilename, { type: getImageMimeType(refFilename) });
                 
                 loadedTargets.push({
-                  id: Math.random().toString(36).substring(2, 9),
+                  id: createId(),
                   url: URL.createObjectURL(file),
                   file: file,
                   model: typeof entry === 'string'
@@ -411,7 +449,7 @@ function App() {
           }
 
           newPrompts.push({
-            id: metadata.id || Math.random().toString(36).substring(2, 9),
+            id: metadata.id || createId(),
             text: metadata.prompt || '',
             scope: metadata.scope || PRESET_SCOPES[0],
             purpose: metadata.purpose || '',
@@ -449,6 +487,50 @@ function App() {
         importInputRef.current.value = '';
       }
     }
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await importZipFile(file);
+  };
+
+  const handleImportDragEnter = (e: React.DragEvent) => {
+    if (isImporting) return;
+    if (!hasZipInDataTransfer(e.dataTransfer)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    importDragCounterRef.current += 1;
+    setIsImportDragOver(true);
+  };
+
+  const handleImportDragOver = (e: React.DragEvent) => {
+    if (isImporting) return;
+    if (!hasZipInDataTransfer(e.dataTransfer)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setIsImportDragOver(true);
+  };
+
+  const handleImportDragLeave = (e: React.DragEvent) => {
+    if (isImporting) return;
+    e.preventDefault();
+    e.stopPropagation();
+    importDragCounterRef.current = Math.max(importDragCounterRef.current - 1, 0);
+    if (importDragCounterRef.current === 0) {
+      setIsImportDragOver(false);
+    }
+  };
+
+  const handleImportDrop = async (e: React.DragEvent) => {
+    if (isImporting) return;
+    const file = e.dataTransfer.files?.[0];
+    if (!file || !isZipFile(file)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    importDragCounterRef.current = 0;
+    setIsImportDragOver(false);
+    await importZipFile(file);
   };
 
   return (
@@ -537,7 +619,20 @@ function App() {
         </header>
 
         {/* Main Workspace */}
-        <main className="flex-1 flex flex-col min-h-0 bg-transparent relative">
+        <main
+          className="flex-1 flex flex-col min-h-0 bg-transparent relative"
+          onDragEnter={handleImportDragEnter}
+          onDragOver={handleImportDragOver}
+          onDragLeave={handleImportDragLeave}
+          onDrop={handleImportDrop}
+        >
+          {isImportDragOver && (
+            <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/40 dark:bg-black/60 backdrop-blur-sm">
+              <div className="px-6 py-4 rounded-xl border border-dashed border-orange-300 dark:border-indigo-400 bg-white/90 dark:bg-slate-900/90 text-sm text-stone-700 dark:text-slate-200 shadow-xl">
+                {t.importDragHint}
+              </div>
+            </div>
+          )}
           <AnnotationPanel 
             prompts={prompts}
             onAddPrompt={handleAddPrompt}
@@ -558,7 +653,7 @@ function App() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/80 backdrop-blur-sm p-4">
             <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-2xl border border-stone-200 dark:border-slate-700 shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
               <div className="flex justify-between items-center p-4 border-b border-stone-200 dark:border-slate-800">
-                <h3 className="font-mono text-sm text-indigo-600 dark:text-indigo-400">Dataset Structure Preview</h3>
+                <h3 className="font-mono text-sm text-indigo-600 dark:text-indigo-400">{t.previewTitle}</h3>
                 <button onClick={() => setShowJsonPreview(false)} className="text-stone-400 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white">
                   <XIcon className="w-5 h-5" />
                 </button>
