@@ -152,50 +152,56 @@ export const ReferencePool: React.FC<ReferencePoolProps> = ({
                <p className="text-xs font-medium opacity-70">{t.empty}</p>
             </div>
           ) : (
-            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
+            <div className={`grid ${showModel ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4' : 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6'} gap-3`}>
               {references.map((ref) => (
                 <div 
                   key={ref.id} 
-                  className="group relative bg-white dark:bg-black/40 rounded-lg overflow-hidden border border-stone-200 dark:border-slate-700/50 hover:border-orange-400 dark:hover:border-indigo-500/50 transition-all shadow-sm dark:shadow-none"
+                  className="group relative bg-white/90 dark:bg-black/40 rounded-xl overflow-hidden border border-stone-200 dark:border-slate-700/50 hover:border-orange-400 dark:hover:border-indigo-500/50 transition-all shadow-sm dark:shadow-none"
                 >
                   <div
-                    className="relative aspect-square cursor-zoom-in"
+                    className={`relative ${showModel ? 'aspect-[4/3]' : 'aspect-square'} cursor-zoom-in bg-stone-50 dark:bg-slate-950`}
                     onClick={() => setPreviewUrl(ref.url)}
                   >
                     <img 
                       src={ref.url} 
                       alt={ref.file.name} 
-                      className="w-full h-full object-contain p-1"
+                      className={`w-full h-full object-contain ${showModel ? 'p-1.5' : 'p-1'}`}
                     />
-                    {/* Overlay Controls */}
-                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-1.5 pointer-events-none">
-                      <div className="text-[10px] text-white/80 truncate px-1.5 py-0.5 drop-shadow-md bg-black/50 rounded">
-                        {ref.file.name}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRemove(ref.id);
+                      }}
+                      className="absolute top-2 right-2 p-1.5 text-slate-200 hover:text-red-400 bg-slate-900/80 rounded-full backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <TrashIcon className="w-3 h-3" />
+                    </button>
+                    {!showModel && (
+                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-1.5 pointer-events-none">
+                        <div className="text-[10px] text-white/80 truncate px-1.5 py-0.5 drop-shadow-md bg-black/50 rounded">
+                          {ref.file.name}
+                        </div>
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onRemove(ref.id);
-                        }}
-                        className="self-end p-1 text-slate-300 hover:text-red-400 bg-slate-900/80 rounded backdrop-blur-sm pointer-events-auto"
-                      >
-                        <TrashIcon className="w-3 h-3" />
-                      </button>
-                    </div>
+                    )}
                   </div>
                   {showModel && (
                     <div
-                      className="px-1.5 py-1.5 bg-stone-50/90 dark:bg-slate-900/80 border-t border-stone-200/70 dark:border-slate-700/70"
+                      className="px-2 py-2 bg-white/95 dark:bg-slate-900/90 border-t border-stone-200/70 dark:border-slate-700/70"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <input
-                        type="text"
-                        value={(ref as any).model || ''}
-                        onChange={(e) => onUpdateModel?.(ref.id, e.target.value)}
-                        placeholder={t.modelPlaceholder}
-                        list={modelOptions.length > 0 ? modelListId : undefined}
-                        className="w-full bg-white dark:bg-slate-950 text-[11px] text-stone-700 dark:text-slate-200 px-2 py-1.5 rounded-md border border-stone-200/80 dark:border-slate-700/80 focus:outline-none focus:border-orange-500 dark:focus:border-indigo-500"
-                      />
+                      <label className="block text-[10px] uppercase tracking-wider text-stone-400 dark:text-slate-500 mb-1">
+                        {t.modelPlaceholder}
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={(ref as any).model || ''}
+                          onChange={(e) => onUpdateModel?.(ref.id, e.target.value)}
+                          placeholder={t.modelPlaceholder}
+                          list={modelOptions.length > 0 ? modelListId : undefined}
+                          className="w-full bg-white dark:bg-slate-950 text-[12px] text-stone-700 dark:text-slate-200 px-2.5 py-2 rounded-lg border border-stone-200/80 dark:border-slate-700/80 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 dark:focus:border-indigo-500"
+                        />
+                      </div>
                       {modelOptions.length > 0 && (
                         <datalist id={modelListId}>
                           {modelOptions.map((option) => (
