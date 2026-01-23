@@ -10,7 +10,7 @@ export interface TargetImage extends ReferenceImage {
 
 export interface PromptEntry {
   id: string;
-  text: string;      // The prompt content
+  texts: string[];   // Multiple prompt texts with different expressions
   scope: string;     // Task Scope (e.g., Object Replacement)
   purpose: string;   // Purpose/Description
   references: ReferenceImage[]; // References specific to this prompt

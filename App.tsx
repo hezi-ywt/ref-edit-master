@@ -54,7 +54,7 @@ function App() {
   // Initialize with one empty prompt
   const [prompts, setPrompts] = useState<PromptEntry[]>([{
     id: createId(),
-    text: '',
+    texts: [''],
     scope: PRESET_SCOPES[0],
     purpose: '',
     references: [],
@@ -79,7 +79,7 @@ function App() {
   const handleAddPrompt = () => {
     setPrompts(prev => [...prev, {
       id: createId(),
-      text: '',
+      texts: [''],
       scope: PRESET_SCOPES[0],
       purpose: '',
       references: [],
@@ -127,6 +127,30 @@ function App() {
 
   const handleUpdatePrompt = (id: string, field: keyof PromptEntry, value: string) => {
     setPrompts(prev => prev.map(p => p.id === id ? { ...p, [field]: value } : p));
+  };
+
+  const handleAddPromptText = (id: string) => {
+    setPrompts(prev => prev.map(p =>
+      p.id === id ? { ...p, texts: [...p.texts, ''] } : p
+    ));
+  };
+
+  const handleRemovePromptText = (id: string, index: number) => {
+    setPrompts(prev => prev.map(p => {
+      if (p.id !== id) return p;
+      // Keep at least one text
+      if (p.texts.length <= 1) return p;
+      return { ...p, texts: p.texts.filter((_, i) => i !== index) };
+    }));
+  };
+
+  const handleUpdatePromptText = (id: string, index: number, value: string) => {
+    setPrompts(prev => prev.map(p => {
+      if (p.id !== id) return p;
+      const newTexts = [...p.texts];
+      newTexts[index] = value;
+      return { ...p, texts: newTexts };
+    }));
   };
 
   // Reference Handlers (Scoped to Prompt)
@@ -195,7 +219,7 @@ function App() {
   const generatePreviewData = () => ({
     prompts: prompts.map((p, idx) => ({
       case_folder: `case_${String(idx + 1).padStart(2, '0')}`,
-      prompt: p.text,
+      prompts: p.texts,
       scope: p.scope,
       purpose: p.purpose,
       references: p.references.map((r, i) => {
@@ -225,9 +249,9 @@ function App() {
 
       const zip = new JSZip();
       const rootFolder = zip.folder(`RefEdit_Dataset_${new Date().toISOString().split('T')[0]}`);
-      
+
       // Filter out empty prompts
-      const validPrompts = prompts.filter(p => p.text.trim() !== '' || p.references.length > 0 || p.targets.length > 0);
+      const validPrompts = prompts.filter(p => p.texts.some(t => t.trim() !== '') || p.references.length > 0 || p.targets.length > 0);
 
       // Process each prompt as a separate case
       validPrompts.forEach((prompt, index) => {
@@ -271,7 +295,7 @@ function App() {
         // Create Case Metadata
         const caseMetadata = {
           id: prompt.id,
-          prompt: prompt.text,
+          prompts: prompt.texts,
           scope: prompt.scope,
           purpose: prompt.purpose,
           references: referenceMapping.map(r => r.saved_as),
@@ -448,9 +472,20 @@ function App() {
             }
           }
 
+          // Support both old format (prompt: string) and new format (prompts: string[])
+          let texts: string[];
+          if (Array.isArray(metadata.prompts)) {
+            texts = metadata.prompts.length > 0 ? metadata.prompts : [''];
+          } else if (metadata.prompt) {
+            // Legacy format compatibility
+            texts = [metadata.prompt];
+          } else {
+            texts = [''];
+          }
+
           newPrompts.push({
             id: metadata.id || createId(),
-            text: metadata.prompt || '',
+            texts: texts,
             scope: metadata.scope || PRESET_SCOPES[0],
             purpose: metadata.purpose || '',
             references: loadedReferences,
@@ -636,12 +671,15 @@ function App() {
               </div>
             </div>
           )}
-          <AnnotationPanel 
+          <AnnotationPanel
             prompts={prompts}
             onAddPrompt={handleAddPrompt}
             onRemovePrompt={handleRemovePrompt}
             onUpdatePrompt={handleUpdatePrompt}
             onClonePrompt={handleClonePrompt}
+            onAddPromptText={handleAddPromptText}
+            onRemovePromptText={handleRemovePromptText}
+            onUpdatePromptText={handleUpdatePromptText}
             onRefUpload={handleRefUpload}
             onRefRemove={handleRefRemove}
             onTargetUpload={handleTargetUpload}

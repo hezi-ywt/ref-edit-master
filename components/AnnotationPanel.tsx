@@ -9,6 +9,9 @@ interface AnnotationPanelProps {
   onRemovePrompt: (id: string) => void;
   onUpdatePrompt: (id: string, field: keyof PromptEntry, value: string) => void;
   onClonePrompt: (id: string) => void;
+  onAddPromptText: (id: string) => void;
+  onRemovePromptText: (id: string, index: number) => void;
+  onUpdatePromptText: (id: string, index: number, value: string) => void;
   onRefUpload: (promptId: string, files: FileList) => void;
   onRefRemove: (promptId: string, refId: string) => void;
   onTargetUpload: (promptId: string, files: FileList) => void;
@@ -26,6 +29,9 @@ const TEXT = {
     clone: "Clone",
     promptContent: "Prompt Content",
     promptPlaceholder: "e.g., Change the background to a cyberpunk city night scene...",
+    addPromptText: "Add Variant",
+    removePromptText: "Remove",
+    promptVariant: "Variant",
     taskScope: "Task Scope",
     scopePlaceholder: "Select or type custom scope...",
     purpose: "Purpose / Goal",
@@ -45,6 +51,9 @@ const TEXT = {
     clone: "克隆",
     promptContent: "指令内容",
     promptPlaceholder: "例如：将背景修改为赛博朋克风格的城市夜景...",
+    addPromptText: "添加变体",
+    removePromptText: "删除",
+    promptVariant: "变体",
     taskScope: "任务范围",
     scopePlaceholder: "选择或输入自定义范围...",
     purpose: "目的 / 目标",
@@ -127,6 +136,9 @@ export const AnnotationPanel: React.FC<AnnotationPanelProps> = ({
   onRemovePrompt,
   onUpdatePrompt,
   onClonePrompt,
+  onAddPromptText,
+  onRemovePromptText,
+  onUpdatePromptText,
   onRefUpload,
   onRefRemove,
   onTargetUpload,
@@ -192,14 +204,43 @@ export const AnnotationPanel: React.FC<AnnotationPanelProps> = ({
                 
                 {/* Left: Content Input */}
                 <div className="lg:col-span-7 flex flex-col gap-4">
-                  <div className="flex flex-col gap-2">
-                    <label className="text-xs font-medium text-stone-500 dark:text-slate-500 uppercase">{t.promptContent}</label>
-                    <textarea
-                      value={item.text}
-                      onChange={(e) => onUpdatePrompt(item.id, 'text', e.target.value)}
-                      placeholder={t.promptPlaceholder}
-                      className="w-full h-24 bg-stone-50 dark:bg-slate-950 border border-stone-200 dark:border-slate-700 rounded-lg p-3 text-sm text-stone-800 dark:text-slate-200 placeholder-stone-400 dark:placeholder-slate-700 focus:outline-none focus:border-orange-500 dark:focus:border-indigo-500 focus:ring-1 focus:ring-orange-500/50 dark:focus:ring-indigo-500/50 resize-none transition-all leading-relaxed"
-                    />
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-medium text-stone-500 dark:text-slate-500 uppercase">{t.promptContent}</label>
+                      <button
+                        onClick={() => onAddPromptText(item.id)}
+                        className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-orange-600 dark:text-indigo-400 hover:text-orange-700 dark:hover:text-indigo-300 hover:bg-orange-50 dark:hover:bg-indigo-500/10 rounded transition-colors"
+                      >
+                        <PlusIcon className="w-3 h-3" />
+                        {t.addPromptText}
+                      </button>
+                    </div>
+                    {item.texts.map((text, textIndex) => (
+                      <div key={textIndex} className="flex gap-2">
+                        <div className="flex-1 relative">
+                          {item.texts.length > 1 && (
+                            <span className="absolute -left-6 top-3 text-xs text-stone-400 dark:text-slate-600 font-mono">
+                              {textIndex + 1}
+                            </span>
+                          )}
+                          <textarea
+                            value={text}
+                            onChange={(e) => onUpdatePromptText(item.id, textIndex, e.target.value)}
+                            placeholder={t.promptPlaceholder}
+                            className="w-full h-20 bg-stone-50 dark:bg-slate-950 border border-stone-200 dark:border-slate-700 rounded-lg p-3 text-sm text-stone-800 dark:text-slate-200 placeholder-stone-400 dark:placeholder-slate-700 focus:outline-none focus:border-orange-500 dark:focus:border-indigo-500 focus:ring-1 focus:ring-orange-500/50 dark:focus:ring-indigo-500/50 resize-y transition-all leading-relaxed"
+                          />
+                        </div>
+                        {item.texts.length > 1 && (
+                          <button
+                            onClick={() => onRemovePromptText(item.id, textIndex)}
+                            className="shrink-0 h-8 px-2 text-xs text-stone-400 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-400/10 rounded transition-colors"
+                            title={t.removePromptText}
+                          >
+                            <TrashIcon className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
                   </div>
 
                   {/* Nested Reference Pool */}
