@@ -227,13 +227,13 @@ export const AnnotationPanel: React.FC<AnnotationPanelProps> = ({
                   </div>
 
                   {/* Purpose Description */}
-                  <div className="flex flex-col gap-2 flex-1">
+                  <div className="flex flex-col gap-2">
                     <label className="text-xs font-medium text-stone-500 dark:text-slate-500 uppercase">{t.purpose}</label>
                     <textarea
                       value={item.purpose}
                       onChange={(e) => onUpdatePrompt(item.id, 'purpose', e.target.value)}
                       placeholder={t.purposePlaceholder}
-                      className="w-full flex-1 bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-700 rounded-lg p-3 text-sm text-stone-800 dark:text-slate-200 placeholder-stone-400 dark:placeholder-slate-700 focus:outline-none focus:border-orange-500 dark:focus:border-indigo-500 focus:ring-1 focus:ring-orange-500/50 dark:focus:ring-indigo-500/50 resize-none min-h-[100px]"
+                      className="w-full bg-white dark:bg-slate-900 border border-stone-200 dark:border-slate-700 rounded-lg p-3 text-sm text-stone-800 dark:text-slate-200 placeholder-stone-400 dark:placeholder-slate-700 focus:outline-none focus:border-orange-500 dark:focus:border-indigo-500 focus:ring-1 focus:ring-orange-500/50 dark:focus:ring-indigo-500/50 resize-y min-h-[60px] max-h-[120px]"
                     />
                   </div>
 

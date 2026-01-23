@@ -152,20 +152,20 @@ export const ReferencePool: React.FC<ReferencePoolProps> = ({
                <p className="text-xs font-medium opacity-70">{t.empty}</p>
             </div>
           ) : (
-            <div className={`grid ${showModel ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4' : 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6'} gap-3`}>
+            <div className={`grid ${showModel ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4' : 'grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3'}`}>
               {references.map((ref) => (
-                <div 
-                  key={ref.id} 
-                  className="group relative bg-white/90 dark:bg-black/40 rounded-xl overflow-hidden border border-stone-200 dark:border-slate-700/50 hover:border-orange-400 dark:hover:border-indigo-500/50 transition-all shadow-sm dark:shadow-none"
+                <div
+                  key={ref.id}
+                  className={`group relative bg-white/90 dark:bg-black/40 rounded-xl overflow-hidden border border-stone-200 dark:border-slate-700/50 hover:border-orange-400 dark:hover:border-indigo-500/50 transition-all shadow-sm dark:shadow-none ${showModel ? 'min-w-[200px]' : ''}`}
                 >
                   <div
-                    className={`relative ${showModel ? 'aspect-[4/3]' : 'aspect-square'} cursor-zoom-in bg-stone-50 dark:bg-slate-950`}
+                    className={`relative ${showModel ? 'aspect-[3/2]' : 'aspect-square'} cursor-zoom-in bg-stone-50 dark:bg-slate-950`}
                     onClick={() => setPreviewUrl(ref.url)}
                   >
-                    <img 
-                      src={ref.url} 
-                      alt={ref.file.name} 
-                      className={`w-full h-full object-contain ${showModel ? 'p-1.5' : 'p-1'}`}
+                    <img
+                      src={ref.url}
+                      alt={ref.file.name}
+                      className={`w-full h-full object-contain ${showModel ? 'p-2' : 'p-1'}`}
                     />
                     <button
                       onClick={(e) => {
@@ -186,10 +186,10 @@ export const ReferencePool: React.FC<ReferencePoolProps> = ({
                   </div>
                   {showModel && (
                     <div
-                      className="px-2 py-2 bg-white/95 dark:bg-slate-900/90 border-t border-stone-200/70 dark:border-slate-700/70"
+                      className="px-3 py-2.5 bg-white/95 dark:bg-slate-900/90 border-t border-stone-200/70 dark:border-slate-700/70"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <label className="block text-[10px] uppercase tracking-wider text-stone-400 dark:text-slate-500 mb-1">
+                      <label className="block text-[10px] uppercase tracking-wider text-stone-400 dark:text-slate-500 mb-1.5 font-medium">
                         {t.modelPlaceholder}
                       </label>
                       <div className="relative">
@@ -199,7 +199,8 @@ export const ReferencePool: React.FC<ReferencePoolProps> = ({
                           onChange={(e) => onUpdateModel?.(ref.id, e.target.value)}
                           placeholder={t.modelPlaceholder}
                           list={modelOptions.length > 0 ? modelListId : undefined}
-                          className="w-full bg-white dark:bg-slate-950 text-[12px] text-stone-700 dark:text-slate-200 px-2.5 py-2 rounded-lg border border-stone-200/80 dark:border-slate-700/80 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 dark:focus:border-indigo-500"
+                          className="w-full bg-white dark:bg-slate-950 text-sm text-stone-700 dark:text-slate-200 px-3 py-2 rounded-lg border border-stone-200/80 dark:border-slate-700/80 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 dark:focus:border-indigo-500 truncate"
+                          title={(ref as any).model || ''}
                         />
                       </div>
                       {modelOptions.length > 0 && (

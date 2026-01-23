@@ -537,81 +537,84 @@ function App() {
     <div className={darkMode ? 'dark' : ''}>
       <div className="flex flex-col h-screen w-screen bg-orange-50 dark:bg-slate-950 text-stone-800 dark:text-slate-100 font-sans transition-colors duration-300">
         {/* Header */}
-        <header className="h-14 border-b border-stone-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/50 backdrop-blur-md flex items-center justify-between px-6 shrink-0 z-20 transition-colors">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-orange-500 dark:bg-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-orange-500/20 dark:shadow-indigo-500/20">
+        <header className="min-h-14 border-b border-stone-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/50 backdrop-blur-md flex items-center justify-between px-3 sm:px-6 py-2 shrink-0 z-20 transition-colors">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="w-8 h-8 bg-orange-500 dark:bg-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-orange-500/20 dark:shadow-indigo-500/20 shrink-0">
               <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5 text-white" stroke="currentColor" strokeWidth="2.5">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
               </svg>
             </div>
-            <h1 className="text-lg font-bold tracking-tight text-stone-900 dark:text-white">Ref-Edit <span className="text-orange-500 dark:text-indigo-400 font-light">{t.titleSuffix}</span></h1>
+            <h1 className="text-base sm:text-lg font-bold tracking-tight text-stone-900 dark:text-white truncate">
+              <span className="hidden sm:inline">Ref-Edit </span>
+              <span className="text-orange-500 dark:text-indigo-400 font-light">{t.titleSuffix}</span>
+            </h1>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3 flex-wrap justify-end">
             {/* Language Toggle */}
             <button
               onClick={() => setLang(lang === 'zh' ? 'en' : 'zh')}
-              className="p-2 text-stone-500 dark:text-slate-400 hover:text-stone-800 dark:hover:text-indigo-400 hover:bg-stone-100 dark:hover:bg-slate-800 rounded-full transition-colors flex items-center gap-1"
+              className="p-1.5 sm:p-2 text-stone-500 dark:text-slate-400 hover:text-stone-800 dark:hover:text-indigo-400 hover:bg-stone-100 dark:hover:bg-slate-800 rounded-full transition-colors flex items-center gap-1"
               title={lang === 'zh' ? "Switch to English" : "切换到中文"}
             >
-              <LanguagesIcon className="w-5 h-5" />
-              <span className="text-xs font-bold w-4">{lang === 'zh' ? 'CN' : 'EN'}</span>
+              <LanguagesIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="text-xs font-bold w-4 hidden xs:inline">{lang === 'zh' ? 'CN' : 'EN'}</span>
             </button>
 
             {/* Theme Toggle */}
              <button
               onClick={() => setDarkMode(!darkMode)}
-              className="p-2 text-stone-500 dark:text-slate-400 hover:text-orange-500 dark:hover:text-yellow-400 hover:bg-stone-100 dark:hover:bg-slate-800 rounded-full transition-colors mr-2"
+              className="p-1.5 sm:p-2 text-stone-500 dark:text-slate-400 hover:text-orange-500 dark:hover:text-yellow-400 hover:bg-stone-100 dark:hover:bg-slate-800 rounded-full transition-colors"
               title="Toggle Theme"
             >
-              {darkMode ? <SunIcon className="w-5 h-5" /> : <MoonIcon className="w-5 h-5" />}
+              {darkMode ? <SunIcon className="w-4 h-4 sm:w-5 sm:h-5" /> : <MoonIcon className="w-4 h-4 sm:w-5 sm:h-5" />}
             </button>
 
-            <button 
+            <button
               onClick={() => setShowJsonPreview(true)}
-              className="text-stone-500 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white text-sm font-medium transition-colors px-3 py-1.5 rounded-md hover:bg-stone-100 dark:hover:bg-slate-800"
+              className="text-stone-500 dark:text-slate-400 hover:text-stone-900 dark:hover:text-white text-xs sm:text-sm font-medium transition-colors px-2 sm:px-3 py-1.5 rounded-md hover:bg-stone-100 dark:hover:bg-slate-800 hidden sm:block"
             >
               {t.preview}
             </button>
-            
-            <input 
-              type="file" 
-              ref={importInputRef} 
-              onChange={handleImport} 
-              accept=".zip" 
-              className="hidden" 
+
+            <input
+              type="file"
+              ref={importInputRef}
+              onChange={handleImport}
+              accept=".zip"
+              className="hidden"
             />
-            
-            <button 
+
+            <button
               onClick={() => importInputRef.current?.click()}
               disabled={isImporting || isExporting}
-              className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-800 hover:bg-stone-50 dark:hover:bg-slate-700 text-stone-700 dark:text-slate-200 rounded-lg text-sm font-medium transition-all shadow-sm border border-stone-200 dark:border-slate-700"
+              className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-white dark:bg-slate-800 hover:bg-stone-50 dark:hover:bg-slate-700 text-stone-700 dark:text-slate-200 rounded-lg text-xs sm:text-sm font-medium transition-all shadow-sm border border-stone-200 dark:border-slate-700"
             >
               {isImporting ? (
                  <div className="w-4 h-4 border-2 border-stone-400 dark:border-slate-400 border-t-transparent rounded-full animate-spin"></div>
               ) : (
                  <ImportIcon className="w-4 h-4" />
               )}
-              {isImporting ? t.importing : t.import}
+              <span className="hidden sm:inline">{isImporting ? t.importing : t.import}</span>
             </button>
 
-            <button 
+            <button
               onClick={handleExport}
               disabled={isExporting || isImporting}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-lg 
-                ${isExporting 
-                  ? 'bg-stone-200 dark:bg-slate-700 text-stone-500 dark:text-slate-400 cursor-wait' 
+              className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all shadow-lg
+                ${isExporting
+                  ? 'bg-stone-200 dark:bg-slate-700 text-stone-500 dark:text-slate-400 cursor-wait'
                   : 'bg-stone-800 hover:bg-black dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 hover:shadow-xl'}`}
             >
               {isExporting ? (
                 <>
                   <div className="w-4 h-4 border-2 border-stone-400 dark:border-slate-400 border-t-transparent rounded-full animate-spin"></div>
-                  {t.zipping}
+                  <span className="hidden sm:inline">{t.zipping}</span>
                 </>
               ) : (
                 <>
                   <DownloadIcon className="w-4 h-4" />
-                  {t.export}
+                  <span className="hidden sm:inline">{t.export}</span>
                 </>
               )}
             </button>
